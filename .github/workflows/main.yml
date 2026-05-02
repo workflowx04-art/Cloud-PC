@@ -1,0 +1,55 @@
+name: Free Cloud PC RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    steps:
+    - name: Install Tailscale (Winget)
+      shell: powershell
+      run: |
+        winget install -e --id Tailscale.Tailscale `
+          --accept-package-agreements `
+          --accept-source-agreements
+
+    - name: Connect Tailscale
+      shell: powershell
+      run: |
+        & "C:\Program Files\Tailscale\tailscale.exe" up `
+          --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} `
+          --unattended `
+          --accept-dns=false `
+          --accept-routes=false
+
+    - name: Enable RDP
+      shell: powershell
+      run: |
+        Set-ItemProperty "HKLM:\System\CurrentControlSet\Control\Terminal Server" `
+          -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+    - name: Disable RDP Timeout
+      shell: powershell
+      run: |
+        reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" `
+          /v MaxIdleTime /t REG_DWORD /d 0 /f
+
+    - name: Set Password
+      shell: powershell
+      run: |
+        net user runneradmin ${{ secrets.RDP_PASSWORD }}
+
+    - name: Show Tailscale IP
+      shell: powershell
+      run: |
+        & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+
+    - name: Keep Alive
+      shell: powershell
+      run: |
+        Write-Host "RDP READY - DO NOT CLOSE ACTIONS PAGE"
+        while ($true) { Start-Sleep -Seconds 60 }
