@@ -25,12 +25,12 @@ jobs:
           --accept-dns=false `
           --accept-routes=false
 
-    - name: Enable RDP
-      shell: powershell
-      run: |
-        Set-ItemProperty "HKLM:\System\CurrentControlSet\Control\Terminal Server" `
-          -Name "fDenyTSConnections" -Value 0
-        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+    - name: Enable RDP (FULL FIX)
+  shell: powershell
+  run: |
+    Set-ItemProperty "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+    Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+    netsh advfirewall firewall set rule group="remote desktop" new enable=Yes
 
     - name: Disable RDP Timeout
       shell: powershell
